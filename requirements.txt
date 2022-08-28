@@ -1,3 +1,5 @@
 matplotlib==3.5.3
 scikit-learn==1.0.2
+numpy==1.21.5
+scipy==1.7.3
 
