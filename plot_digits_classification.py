@@ -13,6 +13,13 @@ hand-written digits, from 0-9.
 
 # Standard scientific Python imports
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+pd.set_option('display.max_columns', 30)
+#pd.set_option('display.max_rows', None)
+from skimage.transform import rescale, resize, downscale_local_mean
+import warnings
+warnings.filterwarnings("ignore")
 
 # Import datasets, classifiers and performance metrics
 from sklearn import datasets, svm, metrics
@@ -29,10 +36,48 @@ from sklearn.model_selection import train_test_split
 # the digit each image represents and this is included in the title of the 4
 # plots below.
 #
+
+#---------------------------------------------------------
+GAMMA = 0.001
+C = 0.5
+GAMMA_list = [0.01,0.005,0.001,0.0005,0.0001,0.00005]
+C_list = [0.05,0.1,0.2,0.5,0.7,0.9,1,2,3,5,6,7,10,20]
+
+combination_tray = []
+
+for gamma_ in GAMMA_list:
+    for c_val in C_list:
+        combination_tray.append([gamma_,c_val])
+
+print("Total Combinations of hyper-parms available : ",len(combination_tray))
+
+
+
+train_frac = 0.8
+test_frac = 0.1
+dev_frac = 0.1
+
+#---------------------------------------------------------
 # Note: if we were working from image files (e.g., 'png' files), we would load
 # them using :func:`matplotlib.pyplot.imread`.
 
 digits = datasets.load_digits()
+
+#--------------------------------------------------------------------------------
+print(digits.images.shape)
+
+# Resizing through rescaling using skimage library 
+modified_images = []
+rescale_factor = 4 #Factor for scaling
+
+for image in digits.images: #Iterating over images
+    image_mod = resize(image, (image.shape[0] * rescale_factor, image.shape[1] * rescale_factor), anti_aliasing=True) #Rescaling image
+    modified_images.append(image_mod)
+
+digits.images = np.array(modified_images) #Passigng into array
+
+print("Shape of array holding all images : ",digits.images.shape)
+#--------------------------------------------------------------------------------
 
 _, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3))
 for ax, image, label in zip(axes, digits.images, digits.target):
@@ -56,22 +101,86 @@ for ax, image, label in zip(axes, digits.images, digits.target):
 # in the test subset.
 
 # flatten the images
+
+print('Shape of an image : ',digits.images[0].shape)
+
+
 n_samples = len(digits.images)
 data = digits.images.reshape((n_samples, -1))
 
-# Create a classifier: a support vector classifier
-clf = svm.SVC(gamma=0.001)
+# Split data into train and rest subsets
+X_train, X_eval, y_train, y_eval = train_test_split(
+    data, digits.target, train_size=train_frac, shuffle=False,
+random_state=100)
 
-# Split data into 50% train and 50% test subsets
-X_train, X_test, y_train, y_test = train_test_split(
-    data, digits.target, test_size=0.5, shuffle=False
-)
+# Split rest data into 50% test and 50% val subsets
+X_test, X_val, y_test, y_val = train_test_split(
+    X_eval, y_eval, test_size=0.5, shuffle=False,
+random_state=100)
 
-# Learn the digits on the train subset
-clf.fit(X_train, y_train)
+#val_accuracy_tray = []
+# val_accuracy_df = pd.DataFrame()
+# val_accuracy_df.columns = ["Hyperparam-combination","train accuracy","test accuracy","val accuracy"]
+accuracy_df_all_comb = pd.DataFrame()
+best_val_acc = 0
 
-# Predict the value of the digit on the test subset
-predicted = clf.predict(X_test)
+for config in combination_tray:
+
+    #temp_df = pd.DataFrame()
+    #print("---- Configuration : ",config)
+    # Create a classifier: a support vector classifier
+    clf = svm.SVC()
+
+    #------------------------------------------------
+    #PART: setting up hyperparameter
+    hyper_params = {'gamma':config[0], 'C':config[1]}
+    clf.set_params(**hyper_params)
+    #------------------------------------------------
+
+    # Learn the digits on the train subset
+    clf.fit(X_train, y_train)
+
+    #----------------------------------------------------------
+    predicted_val = clf.predict(X_val)
+    accuracy_val = metrics.accuracy_score(y_val,predicted_val) 
+
+    predicted_test = clf.predict(X_test)
+    accuracy_test = metrics.accuracy_score(y_test,predicted_test) 
+
+    predicted_train = clf.predict(X_train)
+    accuracy_train = metrics.accuracy_score(y_train,predicted_train) 
+
+    #----------------------------------------------------------
+    hyper_params["train accuracy"] = accuracy_train
+    hyper_params["test accuracy"] = accuracy_test
+    hyper_params["dev accuracy"] = accuracy_val
+
+    #print(hyper_params)
+    temp_df = pd.DataFrame(list(hyper_params.values())).reset_index(drop=True).T
+    #print(temp_df)
+    temp_df.columns = list(hyper_params.keys())
+    accuracy_df_all_comb = accuracy_df_all_comb.append(temp_df)
+
+    if accuracy_val > best_val_acc:
+        best_model = clf
+        best_val_acc = accuracy_val.copy()
+        best_combination_df = temp_df.copy() 
+    else:
+        pass
+
+    #print(temp_df)
+
+    #val_accuracy_tray.append(accuracy_val)
+
+    #print("---- Configuration : ",config, " --- Accuracy : ",accuracy_val)
+###############################################################################
+print("--- All Combinations ---\n")
+print(accuracy_df_all_comb)
+
+print("--- Best Combinations ---\n")
+print(best_combination_df)
+
+predicted = best_model.predict(X_val)
 
 ###############################################################################
 # Below we visualize the first 4 test samples and show their predicted
@@ -80,7 +189,7 @@ predicted = clf.predict(X_test)
 _, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3))
 for ax, image, prediction in zip(axes, X_test, predicted):
     ax.set_axis_off()
-    image = image.reshape(8, 8)
+    image = image.reshape(digits.images[0].shape[0], digits.images[0].shape[1])
     ax.imshow(image, cmap=plt.cm.gray_r, interpolation="nearest")
     ax.set_title(f"Prediction: {prediction}")
 
