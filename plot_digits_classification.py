@@ -40,8 +40,8 @@ from sklearn.model_selection import train_test_split
 #---------------------------------------------------------
 GAMMA = 0.001
 C = 0.5
-GAMMA_list = [0.01,0.005,0.001,0.0005,0.0001,0.00005]
-C_list = [0.05,0.1,0.2,0.5,0.7,0.9,1,2,3,5,6,7,10,20]
+GAMMA_list = [0.01,0.005,0.001,0.0005]
+C_list = [0.05,0.1,0.2,0.5,0.7,0.9,1,2,3]
 
 combination_tray = []
 
@@ -53,7 +53,7 @@ print("Total Combinations of hyper-parms available : ",len(combination_tray))
 
 
 
-train_frac = 0.8
+train_frac = 0.9
 test_frac = 0.1
 dev_frac = 0.1
 
@@ -68,7 +68,7 @@ print(digits.images.shape)
 
 # Resizing through rescaling using skimage library 
 modified_images = []
-rescale_factor = 4 #Factor for scaling
+rescale_factor = 1 #Factor for scaling
 
 for image in digits.images: #Iterating over images
     image_mod = resize(image, (image.shape[0] * rescale_factor, image.shape[1] * rescale_factor), anti_aliasing=True) #Rescaling image
@@ -176,6 +176,13 @@ for config in combination_tray:
 ###############################################################################
 print("--- All Combinations ---\n")
 print(accuracy_df_all_comb)
+print(type(accuracy_df_all_comb.describe()))
+
+print("Statistics of the accuracies : ")
+described_all_comb = accuracy_df_all_comb[["train accuracy","dev accuracy","test accuracy"]].describe().reset_index()
+described_all_comb = described_all_comb[described_all_comb["index"].isin(["mean","50%","min","max"])]
+described_all_comb["index"] = np.where(described_all_comb["index"]=="50%","median",described_all_comb["index"])
+print(described_all_comb)
 
 print("--- Best Combinations ---\n")
 print(best_combination_df)
