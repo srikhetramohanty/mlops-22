@@ -121,7 +121,9 @@ def hyper_param_tuning(model_required,X_train,\
         else:
             pass
 
-    return best_model,accuracy_df_all_comb,best_combination_df
+    predicted = best_model.predict(X_val)
+
+    return best_model,accuracy_df_all_comb,best_combination_df,predicted
 
 
 def generate_random_splits(data,digits,train_frac):
