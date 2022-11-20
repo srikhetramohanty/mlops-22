@@ -13,15 +13,15 @@ def hello_world():
 
 
 
-@app.route("/predict", methods=['GET','POST'])
+@app.route("/predict", methods=['POST'])
 def predict():
     content = request.json
     img1 = content['image1']
 
     img2 = content['image2']
     
-    predicted__1 = model.predict([img1])
-    predicted__2 = model.predict([img2])
+    predicted_1 = model.predict([img1])
+    predicted_2 = model.predict([img2])
     if predicted_1 == predicted_2:
         is_same = True
     else:
