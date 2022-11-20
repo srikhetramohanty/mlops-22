@@ -1,0 +1,3 @@
+test accuracy: 0.8444444444444444
+test macro-f1: 0.8175802987861811
+model saved at ./models/tree_max_depth_7_Criterion_entropy.joblib

@@ -58,11 +58,11 @@ def decision_tree_hyper_params_generator():
 
 def model(model_req):
     if model_req=="svm":
-        print("Model loaded : svm...")
+        #print("Model loaded : svm...")
         return svm.SVC()
-    elif model_req=="decision_tree":
-        print("Model loaded : decision_tree...")
-        return tree.DecisionTreeClassifier()
+    elif model_req=="tree":
+        #print("Model loaded : decision_tree...")
+        return tree.DecisionTreeClassifier(random_state=100)
 
 
 def hyper_param_tuning(model_required,X_train,\
@@ -73,7 +73,7 @@ def hyper_param_tuning(model_required,X_train,\
 
     if model_required=="svm":
         combination_tray = svm_hyper_params_generator()
-    elif model_required=="decision_tree":
+    elif model_required=="tree":
         combination_tray = decision_tree_hyper_params_generator()
 
     for config in combination_tray:
@@ -84,7 +84,7 @@ def hyper_param_tuning(model_required,X_train,\
         #PART: setting up hyperparameter
         if model_required=="svm":
             hyper_params = {'gamma':config[0], 'C':config[1]}
-        elif model_required=="decision_tree":
+        elif model_required=="tree":
             hyper_params = {'max_depth':config[0], 'criterion':config[1]}
 
         clf.set_params(**hyper_params)
@@ -126,14 +126,14 @@ def hyper_param_tuning(model_required,X_train,\
     return best_model,accuracy_df_all_comb,best_combination_df,predicted
 
 
-def generate_random_splits(data,digits,train_frac):
+def generate_random_splits(data,digits,train_frac,seed):
 
     # Split data into train and rest subsets
     X_train, X_eval, y_train, y_eval = train_test_split(
-        data, digits.target, train_size=train_frac, shuffle=True)
+        data, digits.target, train_size=train_frac, shuffle=True,random_state=seed)
 
     # Split rest data into 50% test and 50% val subsets
     X_test, X_val, y_test, y_val = train_test_split(
-        X_eval, y_eval, test_size=0.5, shuffle=True)
+        X_eval, y_eval, test_size=0.5, shuffle=True,random_state=seed)
 
     return X_train,y_train,X_test,y_test,X_val,y_val
